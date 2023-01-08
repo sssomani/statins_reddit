@@ -1,0 +1,9 @@
+**/archive
+**/submission
+*.pkl
+*.pyc
+*.DS_Store
+
+
+
+

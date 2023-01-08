@@ -14,7 +14,7 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from sklearn.preprocessing import MinMaxScaler as mms
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, davies_bouldin_score
 
 # from umap.umap_ import UMAP
 from umap import UMAP
@@ -38,7 +38,6 @@ config = {
     },
 
     'ngram_representation' : {
-        'ngram_range' : (1, 4),
         'stop_words' : 'english'
     },
 
@@ -105,34 +104,40 @@ class BERedditTopics():
 
     def create_groups(self):
         c_tf_idf_mms = mms().fit_transform(self.topic_model.c_tf_idf.toarray())
-        c_tf_idf_embed = UMAP(n_neighbors=4, n_components=3, metric='hellinger', random_state=42).fit_transform(c_tf_idf_mms)
-        ideal_n_clusters = self.find_silhouette_scores(c_tf_idf_embed)
-        self.groups = SpectralClustering(n_clusters=ideal_n_clusters, random_state=42).fit_predict(c_tf_idf_embed)
+        self.c_tf_idf_vis = UMAP(n_neighbors=4, n_components=2, metric='hellinger', random_state=42).fit_transform(c_tf_idf_mms)
+        self.c_tf_idf_embed = UMAP(n_neighbors=4, n_components=3, metric='hellinger', random_state=42).fit_transform(c_tf_idf_mms)
+        ideal_n_clusters = self.find_silhouette_scores(self.c_tf_idf_embed)
+        self.groups = SpectralClustering(n_clusters=ideal_n_clusters, random_state=42).fit_predict(self.c_tf_idf_embed) + 1
+        
+    def get_topic_tree(self):
+        """Generate topic tree in text form for Supplement.
+        """
+        hierarchical_topics = self.hierarchical_topics(self.texts, self.topics)
+        self.hierarchical_tree = self.topic_model.get_topic_tree(hierarchical_topics)
 
     @staticmethod
-    def find_silhouette_scores(c_tf_idf_embed, llim=3, ulim=25):
+    def find_silhouette_scores(c_tf_idf_embed, llim=3, ulim=25, return_plot_data=False):
         """
         Find the optimal number of clusters based on the maximum silhouette score across a range of clusters.
         """
         ss = []
+        db = []
         cluster_arr = np.arange(llim, ulim)
         
         for n_clusters in cluster_arr:
             clusters = SpectralClustering(n_clusters=n_clusters, random_state=42).fit_predict(c_tf_idf_embed)
             ss.append(silhouette_score(c_tf_idf_embed, clusters))
-            
-        with sns.plotting_context('notebook'):
-            sns.set_style('ticks')
-            plt.figure(figsize=(5, 3))
-            ax = sns.lineplot(x=cluster_arr, y=ss, palette='autumn')
-            ax.set_title('Silhouette Score per Cluster', {'fontsize' : 16})
-            plt.show(ax)
+            db.append(davies_bouldin_score(c_tf_idf_embed, clusters))
 
         ideal_n_clusters = cluster_arr[np.argmax(ss)]           
 
         print("top silhouette score: {0:0.3f} for at n_clusters {1}".format(np.max(ss), ideal_n_clusters))
+        print("top davies-bouldin score: {0:0.3f} for at n_clusters {1}".format(np.min(db), cluster_arr[np.argmin(db)]))
         
-        return ideal_n_clusters
+        if return_plot_data:
+            return cluster_arr, ss, db
+        else:
+            return ideal_n_clusters
 
     def save_topic_model(self):
         raise NotImplementedError

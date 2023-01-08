@@ -2,7 +2,7 @@ import pandas as pd
 import tableone
 
 CONFIG = {
-    'data' : '/Users/ssomani/research/heartlab/statins_reddit/data/processed/posts_comms_20220712.csv',
+    'data' : '/Users/ssomani/research/heartlab/statins_reddit/data/raw/posts_comms_20220712.xlsx',
     't1_features' : ['type', 'length', 'query', 'subreddit', 'upvotes'],
     't1_cat_feats' : ['type', 'query', 'subreddit'],
     'output' : '/Users/ssomani/research/heartlab/statins_reddit/reports/tables/table_one.xlsx'
@@ -31,7 +31,7 @@ def create_table_one():
 
     """
 
-    df = pd.read_csv(CONFIG['data'])
+    df = pd.read_excel(CONFIG['data'])
     
     # Find length of each text
     df['length'] = df['content'].apply(lambda x: len(str(x)))
