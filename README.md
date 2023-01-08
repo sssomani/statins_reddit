@@ -1,8 +1,8 @@
-# Attidues and Beliefs Around Statins on Reddit
+# Attitudes and Beliefs Around Statins on Reddit
 
 ## Project Overview
 
-TO DO
+This is the code base for our NLP-based analysis of all statin-related comments on Reddit. 
 
 ## Repository Structure
 
